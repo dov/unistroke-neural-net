@@ -1,15 +1,15 @@
-<com.groodov.dovunistroke.DovUniStrokeView 
+<com.dovgro.dovunistroke.DovUniStrokeView 
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/drawing_space"
     android:background="#000040"
     android:layout_width="200dp"
     android:layout_height="match_parent">
     
-    <com.groodov.dovunistroke.DovUniStrokeGestureView
+    <com.dovgro.dovunistroke.DovUniStrokeGestureView
         android:id="@+id/drawing_space_view"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_centerInParent="true"
         android:background="#000080"/>
 
-</com.groodov.dovunistroke.DovUniStrokeView>
+</com.dovgro.dovunistroke.DovUniStrokeView>

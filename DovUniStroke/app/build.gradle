@@ -5,7 +5,7 @@ android {
 
 
     defaultConfig {
-        applicationId "com.groodov.unistroke"
+        applicationId "com.dovgro.unistroke"
         minSdkVersion 16
         targetSdkVersion 28
         versionCode 1

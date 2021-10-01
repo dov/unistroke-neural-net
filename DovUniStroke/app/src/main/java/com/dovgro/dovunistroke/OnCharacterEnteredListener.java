@@ -1,4 +1,4 @@
-package com.groodov.dovunistroke;
+package com.dovgro.dovunistroke;
 
 /**
  * A simple interface for handling entering a character.

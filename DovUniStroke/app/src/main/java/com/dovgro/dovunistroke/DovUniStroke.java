@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.groodov.dovunistroke;
+package com.dovgro.dovunistroke;
 
 import java.util.ArrayList;
 import java.util.List;

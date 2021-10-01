@@ -4,7 +4,7 @@
 
 import subprocess,os
 
-outdir = '/tmp/foo'
+outdir = '/tmp/dov-uni-stroke'
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 

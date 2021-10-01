@@ -1,4 +1,4 @@
-package com.groodov.dovunistroke;
+package com.dovgro.dovunistroke;
 
 import java.util.List;
 import java.util.LinkedList;

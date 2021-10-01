@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" 
-        package="com.groodov.dovunistroke">
+        package="com.dovgro.dovunistroke">
     <application android:label="@string/ime_name">
         <service android:name="DovUniStroke"
                 android:permission="android.permission.BIND_INPUT_METHOD">
