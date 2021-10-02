@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-# Use adb to get all the glyph files collected on a device
+# Use adb to get all the glyph files collected on a device and save
+# them on disk.
 
-import subprocess,os
+import subprocess,os,sys
 
-outdir = '/tmp/dov-uni-stroke'
+outdir = sys.argv[1] if len(sys.argv)>1 else '/tmp/dov-uni-stroke'
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 

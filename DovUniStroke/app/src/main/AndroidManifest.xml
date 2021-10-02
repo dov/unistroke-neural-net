@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" 
         package="com.dovgro.dovunistroke">
-    <application android:label="@string/ime_name">
+    <application android:label="@string/ime_name"
+                 android:testOnly="false"
+                 >
         <service android:name="DovUniStroke"
                 android:permission="android.permission.BIND_INPUT_METHOD">
             <intent-filter>

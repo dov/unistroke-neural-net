@@ -2,7 +2,7 @@
 # -*- Encoding: utf-8 -*-
 ######################################################################
 #  An application for viewing and annotating the gesture paths
-#  recorded by the DovUniStroke.
+#  recorded by the DovUniStroke with a "ground truth key".
 #
 #  Dov Grobgeld <dov.grobgeld@gmail.com>
 #  2020-03-15 Sun
@@ -15,6 +15,9 @@ from gi.repository import Gtk, GooCanvas, Gdk, Pango
 import pdb
 import glob,os,json,shutil
 
+def is_valid_name(keyname):
+    return (keyname in 'abcdefghijklmnopqrstuvwxyz1234567890'
+            or keyname.startswith('hebrew_'))
 
 class MyWindow(Gtk.Window):
     def __init__(self, glyphdir):
@@ -132,7 +135,10 @@ class MyWindow(Gtk.Window):
     def update_glyph_name(self, glyph_name):
         with open(self.glyphfiles[self.current_glyph_index]) as fp:
             obj = json.load(fp)
-            obj['ground_truth'] = glyph_name
+            if glyph_name is None:
+                del obj['ground_truth']
+            else:
+                obj['ground_truth'] = glyph_name
         shutil.copy(self.glyphfiles[self.current_glyph_index],
                     self.glyphfiles[self.current_glyph_index]+'.bak')
         with open(self.glyphfiles[self.current_glyph_index],'w') as fp:
@@ -154,7 +160,7 @@ class MyWindow(Gtk.Window):
             self.prev_glyph()
         elif keyval_name == 'Right':
             self.next_glyph()
-        elif keyval_name == 'g':
+        elif keyval_name == 'g' and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.glyph_name = None
             self.dialog = Gtk.Dialog('GetKeyname',self)
             entry_name = Gtk.Entry()
@@ -173,6 +179,16 @@ class MyWindow(Gtk.Window):
             else:
                 print('Cancel')
             self.dialog.destroy()
+        elif is_valid_name(keyval_name):
+            self.glyph_name = keyval_name
+            self.update_glyph_name(self.glyph_name)
+            self.next_glyph()
+        elif keyval_name == 'BackSpace':
+            self.glyph_name = '?'
+            self.update_glyph_name(None)
+        else:
+            print(keyval_name)
+
         return True
 
     

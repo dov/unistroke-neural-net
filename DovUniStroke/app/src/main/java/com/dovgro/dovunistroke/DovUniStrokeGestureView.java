@@ -1,3 +1,8 @@
+// The view for the DovUniStroke interface. It receives the touch
+// events and calls the gesture recognizer, and then inserts
+// calls the Android IM backends to insert the recognized characters.
+
+
 package com.dovgro.dovunistroke;
 
 import java.util.List;
@@ -41,7 +46,7 @@ import androidx.core.content.ContextCompat;
 
 
 public class DovUniStrokeGestureView extends View implements OnTouchListener, OnClickListener {
-    ArrayList<GesturePoint> points = new ArrayList<GesturePoint>();
+    ArrayList<GesturePoint> mPoints = new ArrayList<GesturePoint>();
     Paint paint = new Paint();
     List<GestureLibrary> mGestures;
     String glyphName = null;
@@ -50,14 +55,16 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
     int mCurrentGestureSet = 0;
     final String[] mSymbolSetChar = {"L","ע","123"};
     int mModifier = 0;
+    int mPrevGestureSet = 0; // when going back and forth between numeric and "normal"
     int mGlyphIndex=0;
+    float mCanvasWidth = 0;
     Context mContext;
     
     private OnCharacterEnteredListener mOnCharacterEnteredListener;
     private OnBackspaceListener mOnBackspaceListener;
     private OnReturnListener mOnReturnListener;
 
-    private static final String TAG = "UniPen";
+    private static final String TAG = "DovUniStroke";
 
     public DovUniStrokeGestureView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -119,15 +126,16 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
 
     @Override
     public void onDraw(Canvas canvas) {
+        mCanvasWidth = canvas.getWidth(); // is this called beore the first touch?
         paint.setColor(Color.WHITE);
-        for (GesturePoint point : points) {
+        for (GesturePoint point : mPoints) {
             canvas.drawCircle(point.x, point.y, 2, paint);  
         }
         paint.setColor(Color.RED);
         
         boolean first=true;
         GesturePoint last_point = new GesturePoint(0.f,0.f,0);
-        for (GesturePoint point : points) {
+        for (GesturePoint point : mPoints) {
             if (first)
                 first = false;
             else if (point.x != -999 && last_point.x != -999)
@@ -138,7 +146,7 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
         }
 
         paint.setColor(Color.WHITE);
-        for (GesturePoint point : points) {
+        for (GesturePoint point : mPoints) {
             canvas.drawCircle(point.x, point.y, 4, paint);  
         }
 
@@ -152,24 +160,39 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
         paint.setColor(Color.CYAN);
         paint.setTextSize(50);
         paint.setTextAlign(Align.LEFT);
-        canvas.drawText("DovUnistroke",10,50,paint);
+        canvas.drawText("DovUnistroke",50,50,paint);
         
         // Write modifier indicator
         float modifier_x = 25;
         float modifier_y = 18;
         if (mModifier == 1) {
             Path path = new Path();
-            path.moveTo(modifier_x,modifier_y+10);
-            path.lineTo(modifier_x,modifier_y-10);
-            path.close();
-            paint.setStrokeWidth(2);
+            path.moveTo(modifier_x,modifier_y);
+            path.lineTo(modifier_x,modifier_y+40);
+            paint.setStrokeWidth(7);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setStyle(Paint.Style.STROKE);
+            paint.setColor(Color.YELLOW);
             canvas.drawPath(path, paint);
         }
         else if (mModifier == 2) {
+            paint.setColor(Color.YELLOW);
             paint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(modifier_x, modifier_y, 7, paint);  
+            canvas.drawCircle(modifier_x, modifier_y+20, 7, paint);  
+        }
+
+        // Draw numeric area line
+        {
+            Path path = new Path();
+            float width = canvas.getWidth();
+            float height = canvas.getHeight();
+            path.moveTo(width*2/3,0);
+            path.lineTo(width*2/3,height);
+            paint.setStrokeWidth(2);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setColor(Color.CYAN);
+            paint.setStrokeWidth(2);
+            canvas.drawPath(path, paint);
         }
     }
 
@@ -181,7 +204,26 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
         Point point = new Point();
         point.x = event.getX();
         point.y = event.getY();
-        points.add(new GesturePoint(event.getX(), event.getY(), event.getEventTime()));
+
+        // On the first point change the modifier based on the x-position
+        // of the stroke
+        if (mPoints.size() == 0) {
+            // Test for numeric area
+            if (point.x > mCanvasWidth * 2/3) {
+                if (mCurrentGestureSet != 2) { // If we weren't already numeric,
+                                      // turn it on and save the last state
+                    mPrevGestureSet = mModifier;
+                    mCurrentGestureSet = 2;
+                }
+            }
+            else {
+                if (mCurrentGestureSet == 2) {
+                    mCurrentGestureSet = mPrevGestureSet; // restore
+                }
+            }
+        }
+
+        mPoints.add(new GesturePoint(event.getX(), event.getY(), event.getEventTime()));
 
         if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
             // Build a gesture
@@ -189,7 +231,7 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
 
             // Get bounding box
             double minx=1.e6, miny=1.e6, maxx=-1.e6, maxy=-1.e6;
-            for (GesturePoint p : points) {
+            for (GesturePoint p : mPoints) {
                 if (p.x < minx) {
                     minx = p.x;
                 }
@@ -206,18 +248,18 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
             double maxWidth = maxx-minx;
             double maxHeight = maxy-miny;
 
-            GestureStroke stroke = new GestureStroke(points);
+            GestureStroke stroke = new GestureStroke(mPoints);
             gest.addStroke(stroke);
-            Log.v(TAG, "Dov: Interpreting a gesture of length=" + points.size());
+            Log.v(TAG, "Dov: Interpreting a gesture of length=" + mPoints.size());
 
             // special heuristic for space and backspace.
             // TBD - Make this dependent on the widget size!
-            int len = points.size();
-            if (points.get(len-1).x < points.get(0).x-50
+            int len = mPoints.size();
+            if (mPoints.get(len-1).x < mPoints.get(0).x-50
                 && 1.0*(maxy-miny)/(maxx-minx) < 0.35) {
                 processRecognizedGlyph("backspace");
             }
-            else if (points.get(len-1).x > points.get(0).x+50
+            else if (mPoints.get(len-1).x > mPoints.get(0).x+50
                 && 1.0*(maxy-miny)/(maxx-minx) < 0.35) {
                 processRecognizedGlyph("space");
             }
@@ -234,8 +276,8 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
 
                 // Only allow V,U,or Y predictions if the first and the last point are
                 // extremes.
-                double firstx = points.get(0).x;
-                double lastx = points.get(len-1).x;
+                double firstx = mPoints.get(0).x;
+                double lastx = mPoints.get(len-1).x;
                 boolean v_shaped = (((firstx-minx)/maxWidth < 0.1
                                      && (maxx-lastx)/maxWidth < 0.1)
                                     || ((lastx-minx)/maxWidth < 0.1
@@ -298,7 +340,7 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
                                 + "  \"gesture\": [\n").getBytes()
                                );
                     list.clear();
-                    for (GesturePoint p : points) {
+                    for (GesturePoint p : mPoints) {
                         list.add(String.format("{ \"x\": %f, \"y\": %f, \"t\": %d }",p.x,p.y,p.timestamp));
                     }
                     fstr.write(("    "
@@ -319,7 +361,7 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
             }
             
 
-            points.clear();
+            mPoints.clear();
         }
         invalidate();
         return false;
@@ -370,6 +412,9 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
             else if (name.equals("z")) {
                 symbol = "=";
             }
+            else if (name.equals("o")) {
+                symbol = "@";
+            }
             else if (name.equals("down-up")) {
                 symbol = ":";
             }
@@ -417,6 +462,9 @@ public class DovUniStrokeGestureView extends View implements OnTouchListener, On
         return symbol;
     }
 
+    // This takes the glyph name recognized and either changes
+    // the internal state (setting the mModifier) or enters the
+    // character.
     void processRecognizedGlyph(String glyph)
     {
         Log.v(TAG, "Dov: glyph mModifier = " + glyph + " " + mModifier);
